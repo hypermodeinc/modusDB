@@ -1,8 +1,8 @@
 package modusdb
 
-import "fmt"
-
-type QueryFunc func() string
+import (
+	"fmt"
+)
 
 const (
 	objQuery = `
@@ -17,25 +17,20 @@ const (
         dgraph.type
         %s
       }
-    }
-    `
+    }`
 
 	funcUid = `func: uid(%d)`
 	funcEq  = `func: eq(%s, %s)`
 )
 
-func buildUidQuery(gid uint64) QueryFunc {
-	return func() string {
-		return fmt.Sprintf(funcUid, gid)
-	}
+func uidQuery(gid uint64) string {
+	return fmt.Sprintf(funcUid, gid)
 }
 
-func buildEqQuery(key, value any) QueryFunc {
-	return func() string {
-		return fmt.Sprintf(funcEq, key, value)
-	}
+func eqQuery(key, value any) string {
+	return fmt.Sprintf(funcEq, key, value)
 }
 
-func formatObjQuery(qf QueryFunc, extraFields string) string {
-	return fmt.Sprintf(objQuery, qf(), extraFields)
+func formatObjQuery(qf string, extraFields string) string {
+	return fmt.Sprintf(objQuery, qf, extraFields)
 }

@@ -40,9 +40,9 @@ func BenchmarkDatabaseOperations(b *testing.B) {
 		runtime.ReadMemStats(&ms)
 		initialAlloc := ms.Alloc
 
-		db, err := modusdb.New(modusdb.NewDefaultConfig(b.TempDir()))
+		driver, err := modusdb.NewDriver(modusdb.NewDefaultConfig(b.TempDir()))
 		require.NoError(b, err)
-		defer db.Close()
+		defer driver.Close()
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
@@ -51,7 +51,7 @@ func BenchmarkDatabaseOperations(b *testing.B) {
 			dataFile := filepath.Join(dataFolder, "data.rdf")
 			require.NoError(b, os.WriteFile(schemaFile, []byte(DbSchema), 0600))
 			require.NoError(b, os.WriteFile(dataFile, []byte(SmallData), 0600))
-			require.NoError(b, db.Load(context.Background(), schemaFile, dataFile))
+			require.NoError(b, driver.Load(context.Background(), schemaFile, dataFile))
 		}
 		reportMemStats(b, initialAlloc)
 	})
@@ -66,16 +66,16 @@ func BenchmarkDatabaseOperations(b *testing.B) {
 		initialAlloc := ms.Alloc
 
 		// Setup database with data once
-		db, err := modusdb.New(modusdb.NewDefaultConfig(b.TempDir()))
+		driver, err := modusdb.NewDriver(modusdb.NewDefaultConfig(b.TempDir()))
 		require.NoError(b, err)
-		defer db.Close()
+		defer driver.Close()
 
 		dataFolder := b.TempDir()
 		schemaFile := filepath.Join(dataFolder, "data.schema")
 		dataFile := filepath.Join(dataFolder, "data.rdf")
 		require.NoError(b, os.WriteFile(schemaFile, []byte(DbSchema), 0600))
 		require.NoError(b, os.WriteFile(dataFile, []byte(SmallData), 0600))
-		require.NoError(b, db.Load(context.Background(), schemaFile, dataFile))
+		require.NoError(b, driver.Load(context.Background(), schemaFile, dataFile))
 
 		const query = `{
             caro(func: allofterms(name@en, "Marc Caro")) {
@@ -101,6 +101,7 @@ func BenchmarkDatabaseOperations(b *testing.B) {
             ]
         }`
 
+		db := driver.GetDefaultDB()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			resp, err := db.Query(context.Background(), query)

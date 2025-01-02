@@ -15,12 +15,12 @@ import (
 
 func TestRestart(t *testing.T) {
 	dataDir := t.TempDir()
-
-	db, err := modusdb.New(modusdb.NewDefaultConfig(dataDir))
+	driver, err := modusdb.NewDriver(modusdb.NewDefaultConfig(dataDir))
 	require.NoError(t, err)
-	defer func() { db.Close() }()
+	defer func() { driver.Close() }()
+	require.NoError(t, driver.DropAll(context.Background()))
 
-	require.NoError(t, db.DropAll(context.Background()))
+	db := driver.GetDefaultDB()
 	require.NoError(t, db.AlterSchema(context.Background(), "name: string @index(term) ."))
 
 	_, err = db.Mutate(context.Background(), []*api.Mutation{
@@ -46,22 +46,23 @@ func TestRestart(t *testing.T) {
 	require.NoError(t, err)
 	require.JSONEq(t, `{"me":[{"name":"A"}]}`, string(qresp.GetJson()))
 
-	db.Close()
-	db, err = modusdb.New(modusdb.NewDefaultConfig(dataDir))
+	driver.Close()
+	driver, err = modusdb.NewDriver(modusdb.NewDefaultConfig(dataDir))
 	require.NoError(t, err)
 	qresp, err = db.Query(context.Background(), query)
 	require.NoError(t, err)
 	require.JSONEq(t, `{"me":[{"name":"A"}]}`, string(qresp.GetJson()))
 
-	require.NoError(t, db.DropAll(context.Background()))
+	require.NoError(t, driver.DropAll(context.Background()))
 }
 
 func TestSchemaQuery(t *testing.T) {
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	driver, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
-	defer db.Close()
+	defer driver.Close()
+	require.NoError(t, driver.DropAll(context.Background()))
 
-	require.NoError(t, db.DropAll(context.Background()))
+	db := driver.GetDefaultDB()
 	require.NoError(t, db.AlterSchema(context.Background(), `
 		name: string @index(exact) .
 		age: int .
@@ -86,11 +87,12 @@ func TestBasicVector(t *testing.T) {
 	}
 	vectBytes := buf.Bytes()
 
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	driver, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
-	defer db.Close()
+	defer driver.Close()
+	require.NoError(t, driver.DropAll(context.Background()))
 
-	require.NoError(t, db.DropAll(context.Background()))
+	db := driver.GetDefaultDB()
 	require.NoError(t, db.AlterSchema(context.Background(),
 		`project_description_v: float32vector @index(hnsw(exponent: "5", metric: "euclidean")) .`))
 

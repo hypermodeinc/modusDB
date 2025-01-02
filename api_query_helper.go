@@ -7,25 +7,25 @@ import (
 	"reflect"
 )
 
-func getByGid[T any](ctx context.Context, n *Namespace, gid uint64) (uint64, *T, error) {
+func getByGid[T any](ctx context.Context, n *DB, gid uint64) (uint64, *T, error) {
 	return executeGet[T](ctx, n, gid)
 }
 
-func getByGidWithObject[T any](ctx context.Context, n *Namespace, gid uint64, obj T) (uint64, *T, error) {
+func getByGidWithObject[T any](ctx context.Context, n *DB, gid uint64, obj T) (uint64, *T, error) {
 	return executeGetWithObject[T](ctx, n, obj, false, gid)
 }
 
-func getByConstrainedField[T any](ctx context.Context, n *Namespace, cf ConstrainedField) (uint64, *T, error) {
+func getByConstrainedField[T any](ctx context.Context, n *DB, cf ConstrainedField) (uint64, *T, error) {
 	return executeGet[T](ctx, n, cf)
 }
 
-func getByConstrainedFieldWithObject[T any](ctx context.Context, n *Namespace,
+func getByConstrainedFieldWithObject[T any](ctx context.Context, n *DB,
 	cf ConstrainedField, obj T) (uint64, *T, error) {
 
 	return executeGetWithObject[T](ctx, n, obj, false, cf)
 }
 
-func executeGet[T any, R UniqueField](ctx context.Context, n *Namespace, args ...R) (uint64, *T, error) {
+func executeGet[T any, R UniqueField](ctx context.Context, n *DB, args ...R) (uint64, *T, error) {
 	if len(args) != 1 {
 		return 0, nil, fmt.Errorf("expected 1 argument, got %d", len(args))
 	}
@@ -35,7 +35,7 @@ func executeGet[T any, R UniqueField](ctx context.Context, n *Namespace, args ..
 	return executeGetWithObject(ctx, n, obj, true, args...)
 }
 
-func executeGetWithObject[T any, R UniqueField](ctx context.Context, n *Namespace,
+func executeGetWithObject[T any, R UniqueField](ctx context.Context, n *DB,
 	obj T, withReverse bool, args ...R) (uint64, *T, error) {
 	t := reflect.TypeOf(obj)
 
@@ -60,9 +60,9 @@ func executeGetWithObject[T any, R UniqueField](ctx context.Context, n *Namespac
 	var query string
 	gid, ok := any(args[0]).(uint64)
 	if ok {
-		query = formatObjQuery(buildUidQuery(gid), readFromQuery)
+		query = formatObjQuery(uidQuery(gid), readFromQuery)
 	} else if cf, ok = any(args[0]).(ConstrainedField); ok {
-		query = formatObjQuery(buildEqQuery(getPredicateName(t.Name(), cf.Key), cf.Value), readFromQuery)
+		query = formatObjQuery(eqQuery(getPredicateName(t.Name(), cf.Key), cf.Value), readFromQuery)
 	} else {
 		return 0, nil, fmt.Errorf("invalid unique field type")
 	}

@@ -14,8 +14,9 @@ import (
 	"github.com/dgraph-io/dgraph/v24/x"
 )
 
-func generateCreateDqlMutationsAndSchema[T any](ctx context.Context, n *Namespace, object T,
+func generateCreateDqlMutationsAndSchema[T any](ctx context.Context, n *DB, object T,
 	gid uint64, dms *[]*dql.Mutation, sch *schema.ParsedSchema) error {
+
 	t := reflect.TypeOf(object)
 	if t.Kind() != reflect.Struct {
 		return fmt.Errorf("expected struct, got %s", t.Kind())
@@ -131,7 +132,7 @@ func generateCreateDqlMutationsAndSchema[T any](ctx context.Context, n *Namespac
 	return nil
 }
 
-func generateDeleteDqlMutations(n *Namespace, gid uint64) []*dql.Mutation {
+func generateDeleteDqlMutations(n *DB, gid uint64) []*dql.Mutation {
 	return []*dql.Mutation{{
 		Del: []*api.NQuad{
 			{
@@ -146,7 +147,7 @@ func generateDeleteDqlMutations(n *Namespace, gid uint64) []*dql.Mutation {
 	}}
 }
 
-func applyDqlMutations(ctx context.Context, db *DB, dms []*dql.Mutation) error {
+func applyDqlMutations(ctx context.Context, db *Driver, dms []*dql.Mutation) error {
 	edges, err := query.ToDirectedEdges(dms, nil)
 	if err != nil {
 		return err
@@ -185,7 +186,7 @@ func applyDqlMutations(ctx context.Context, db *DB, dms []*dql.Mutation) error {
 	})
 }
 
-func getUidOrMutate[T any](ctx context.Context, db *DB, n *Namespace, object T) (uint64, error) {
+func getUidOrMutate[T any](ctx context.Context, db *Driver, n *DB, object T) (uint64, error) {
 	gid, cf, err := getUniqueConstraint[T](object)
 	if err != nil {
 		return 0, err

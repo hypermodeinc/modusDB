@@ -1,22 +1,26 @@
 package modusdb
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/dgraph-io/dgraph/v24/dql"
+	"github.com/dgraph-io/dgraph/v24/query"
 	"github.com/dgraph-io/dgraph/v24/schema"
+	"github.com/dgraph-io/dgraph/v24/x"
 )
 
-func Create[T any](db *DB, object *T, ns ...uint64) (uint64, *T, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
+func Create[T any](d *Driver, object *T, ns ...uint64) (uint64, *T, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	if len(ns) > 1 {
 		return 0, object, fmt.Errorf("only one namespace is allowed")
 	}
-	ctx, n, err := getDefaultNamespace(db, ns...)
-	if err != nil {
-		return 0, object, err
-	}
+	ctx := context.Background()
+
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	gid, err := db.z.nextUID()
 	if err != nil {
@@ -30,12 +34,26 @@ func Create[T any](db *DB, object *T, ns ...uint64) (uint64, *T, error) {
 		return 0, object, err
 	}
 
+	edges, err := query.ToDirectedEdges(dms, nil)
+	if err != nil {
+		return 0, object, err
+	}
+	ctx = x.AttachNamespace(ctx, ns.ID())
+
 	err = n.alterSchemaWithParsed(ctx, sch)
 	if err != nil {
 		return 0, object, err
 	}
 
-	err = applyDqlMutations(ctx, db, dms)
+	if !db.isOpen {
+		return 0, object, ErrClosedDB
+	}
+
+	startTs, err := db.z.nextTS()
+	if err != nil {
+		return 0, object, err
+	}
+	commitTs, err := db.z.nextTS()
 	if err != nil {
 		return 0, object, err
 	}
@@ -43,11 +61,10 @@ func Create[T any](db *DB, object *T, ns ...uint64) (uint64, *T, error) {
 	return getByGid[T](ctx, n, gid)
 }
 
-func Upsert[T any](db *DB, object *T, ns ...uint64) (uint64, *T, bool, error) {
-
+func Upsert[T any](driver *Driver, object *T, ns ...uint64) (uint64, *T, bool, error) {
 	var wasFound bool
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
+	driver.mutex.Lock()
+	defer driver.mutex.Unlock()
 	if len(ns) > 1 {
 		return 0, object, false, fmt.Errorf("only one namespace is allowed")
 	}
@@ -116,9 +133,9 @@ func Upsert[T any](db *DB, object *T, ns ...uint64) (uint64, *T, bool, error) {
 	return gid, object, wasFound, nil
 }
 
-func Get[T any, R UniqueField](db *DB, uniqueField R, ns ...uint64) (uint64, *T, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
+func Get[T any, R UniqueField](driver *Driver, uniqueField R, ns ...uint64) (uint64, *T, error) {
+	driver.mutex.Lock()
+	defer driver.mutex.Unlock()
 	if len(ns) > 1 {
 		return 0, nil, fmt.Errorf("only one namespace is allowed")
 	}
@@ -137,9 +154,9 @@ func Get[T any, R UniqueField](db *DB, uniqueField R, ns ...uint64) (uint64, *T,
 	return 0, nil, fmt.Errorf("invalid unique field type")
 }
 
-func Delete[T any, R UniqueField](db *DB, uniqueField R, ns ...uint64) (uint64, *T, error) {
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
+func Delete[T any, R UniqueField](driver *Driver, uniqueField R, ns ...uint64) (uint64, *T, error) {
+	driver.mutex.Lock()
+	defer driver.mutex.Unlock()
 	if len(ns) > 1 {
 		return 0, nil, fmt.Errorf("only one namespace is allowed")
 	}
