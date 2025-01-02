@@ -18,7 +18,7 @@ type User struct {
 }
 
 func TestFirstTimeUser(t *testing.T) {
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -65,7 +65,7 @@ func TestFirstTimeUser(t *testing.T) {
 
 func TestCreateApi(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -122,7 +122,7 @@ func TestCreateApi(t *testing.T) {
 
 func TestCreateApiWithNonStruct(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -143,7 +143,7 @@ func TestCreateApiWithNonStruct(t *testing.T) {
 
 func TestGetApi(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -172,7 +172,7 @@ func TestGetApi(t *testing.T) {
 
 func TestGetApiWithConstrainedField(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -204,7 +204,7 @@ func TestGetApiWithConstrainedField(t *testing.T) {
 
 func TestDeleteApi(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -241,7 +241,7 @@ func TestDeleteApi(t *testing.T) {
 
 func TestUpsertApi(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -289,7 +289,7 @@ type Branch struct {
 
 func TestNestedObjectMutation(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -343,7 +343,7 @@ func TestNestedObjectMutation(t *testing.T) {
 
 func TestLinkingObjectsByConstrainedFields(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -406,7 +406,7 @@ func TestLinkingObjectsByConstrainedFields(t *testing.T) {
 
 func TestLinkingObjectsByGid(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 
@@ -480,7 +480,7 @@ type BadBranch struct {
 
 func TestNestedObjectMutationWithBadType(t *testing.T) {
 	ctx := context.Background()
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	db, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
 	defer db.Close()
 

@@ -15,21 +15,22 @@ import (
 )
 
 const (
-	vectorSchemaWithIndex = `%v: float32vector @index(hnsw(exponent: "%v", metric: "%v")) .`
-	numVectors            = 1000
+	vectorSchema = `%v: float32vector @index(hnsw(exponent: "%v", metric: "%v")) .`
+	numVectors   = 1000
 )
 
 func TestVectorDelete(t *testing.T) {
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	driver, err := modusdb.NewDriver(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
-	defer db.Close()
+	defer driver.Close()
+	require.NoError(t, driver.DropAll(context.Background()))
 
-	require.NoError(t, db.DropAll(context.Background()))
+	db := driver.GetDefaultDB()
 	require.NoError(t, db.AlterSchema(context.Background(),
-		fmt.Sprintf(vectorSchemaWithIndex, "vtest", "4", "euclidean")))
+		fmt.Sprintf(vectorSchema, "vtest", "4", "euclidean")))
 
 	// insert random vectors
-	assignIDs, err := db.LeaseUIDs(numVectors + 1)
+	assignIDs, err := driver.LeaseUIDs(numVectors + 1)
 	require.NoError(t, err)
 	//nolint:gosec
 	rdf, vectors := dgraphapi.GenerateRandomVectors(int(assignIDs.StartId)-10, int(assignIDs.EndId)-10, 10, "vtest")

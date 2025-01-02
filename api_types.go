@@ -1,14 +1,12 @@
 package modusdb
 
 import (
-	"context"
 	"encoding/binary"
 	"fmt"
 	"time"
 
 	"github.com/dgraph-io/dgo/v240/protos/api"
 	"github.com/dgraph-io/dgraph/v24/protos/pb"
-	"github.com/dgraph-io/dgraph/v24/x"
 	"github.com/twpayne/go-geom"
 	"github.com/twpayne/go-geom/encoding/wkb"
 )
@@ -24,37 +22,6 @@ type UniqueField interface {
 type ConstrainedField struct {
 	Key   string
 	Value any
-}
-
-type ModusDbOption func(*modusDbOptions)
-
-type modusDbOptions struct {
-	namespace uint64
-}
-
-func WithNamespace(namespace uint64) ModusDbOption {
-	return func(o *modusDbOptions) {
-		o.namespace = namespace
-	}
-}
-
-func getDefaultNamespace(db *DB, ns ...uint64) (context.Context, *Namespace, error) {
-	dbOpts := &modusDbOptions{
-		namespace: db.defaultNamespace.ID(),
-	}
-	for _, ns := range ns {
-		WithNamespace(ns)(dbOpts)
-	}
-
-	n, err := db.getNamespaceWithLock(dbOpts.namespace)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	ctx := context.Background()
-	ctx = x.AttachNamespace(ctx, n.ID())
-
-	return ctx, n, nil
 }
 
 func valueToPosting_ValType(v any) (pb.Posting_ValType, error) {
