@@ -1,3 +1,12 @@
+/*
+ * Copyright 2025 Hypermode Inc.
+ * Licensed under the terms of the Apache License, Version 2.0
+ * See the LICENSE file that accompanied this code for further details.
+ *
+ * SPDX-FileCopyrightText: 2025 Hypermode Inc. <hello@hypermode.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package modusdb
 
 import (
@@ -61,6 +70,10 @@ func (n *Namespace) AlterSchema(ctx context.Context, sch string) error {
 	if err != nil {
 		return fmt.Errorf("error parsing schema: %w", err)
 	}
+	return n.alterSchemaWithParsed(ctx, sc)
+}
+
+func (n *Namespace) alterSchemaWithParsed(ctx context.Context, sc *schema.ParsedSchema) error {
 	for _, pred := range sc.Preds {
 		worker.InitTablet(pred.Predicate)
 	}
@@ -87,6 +100,8 @@ func (n *Namespace) Mutate(ctx context.Context, ms []*api.Mutation) (map[string]
 		return nil, nil
 	}
 
+	n.db.mutex.Lock()
+	defer n.db.mutex.Unlock()
 	dms := make([]*dql.Mutation, 0, len(ms))
 	for _, mu := range ms {
 		dm, err := edgraph.ParseMutationObject(mu, false)
@@ -113,14 +128,17 @@ func (n *Namespace) Mutate(ctx context.Context, ms []*api.Mutation) (map[string]
 			curId++
 		}
 	}
+
+	return n.mutateWithDqlMutation(ctx, dms, newUids)
+}
+
+func (n *Namespace) mutateWithDqlMutation(ctx context.Context, dms []*dql.Mutation,
+	newUids map[string]uint64) (map[string]uint64, error) {
 	edges, err := query.ToDirectedEdges(dms, newUids)
 	if err != nil {
 		return nil, err
 	}
 	ctx = x.AttachNamespace(ctx, n.ID())
-
-	n.db.mutex.Lock()
-	defer n.db.mutex.Unlock()
 
 	if !n.db.isOpen {
 		return nil, ErrClosedDB
@@ -164,6 +182,10 @@ func (n *Namespace) Query(ctx context.Context, query string) (*api.Response, err
 	n.db.mutex.RLock()
 	defer n.db.mutex.RUnlock()
 
+	return n.queryWithLock(ctx, query)
+}
+
+func (n *Namespace) queryWithLock(ctx context.Context, query string) (*api.Response, error) {
 	if !n.db.isOpen {
 		return nil, ErrClosedDB
 	}
