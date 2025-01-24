@@ -1,3 +1,12 @@
+/*
+ * Copyright 2025 Hypermode Inc.
+ * Licensed under the terms of the Apache License, Version 2.0
+ * See the LICENSE file that accompanied this code for further details.
+ *
+ * SPDX-FileCopyrightText: 2025 Hypermode Inc. <hello@hypermode.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 package modusdb
 
 import (
@@ -10,9 +19,9 @@ import (
 	"time"
 
 	"github.com/dgraph-io/dgo/v240/protos/api"
-	"github.com/dgraph-io/dgraph/v24/chunker"
-	"github.com/dgraph-io/dgraph/v24/filestore"
-	"github.com/dgraph-io/dgraph/v24/x"
+	"github.com/hypermodeinc/dgraph/v24/chunker"
+	"github.com/hypermodeinc/dgraph/v24/filestore"
+	"github.com/hypermodeinc/dgraph/v24/x"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 )
@@ -237,7 +246,7 @@ func (l *liveLoader) uid(ns uint64, val string) (string, error) {
 		return uid, nil
 	}
 
-	asUID, err := l.n.db.LeaseUIDs(1)
+	asUID, err := l.n.engine.LeaseUIDs(1)
 	if err != nil {
 		return "", fmt.Errorf("error allocating UID: %w", err)
 	}

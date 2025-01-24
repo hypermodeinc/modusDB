@@ -1,4 +1,4 @@
-name: ci-go-tests
+name: ci-go-lint
 
 on:
   pull_request:
@@ -8,16 +8,17 @@ on:
       - reopened
       - ready_for_review
     paths:
-      - '**/*.go'
-      - '**/go.mod'
+      - "**/*.go"
+      - "**/go.mod"
+      - .github/workflows/*
 
 permissions:
   contents: read
   actions: write
 
 jobs:
-  ci-go-tests:
-    runs-on: ubuntu-24.04
+  ci-go-lint:
+    runs-on: warp-ubuntu-latest-arm64-2x
 
     steps:
       - uses: actions/checkout@v4
@@ -25,13 +26,10 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: 'go.mod'
+          go-version-file: go.mod
           cache-dependency-path: go.sum
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6.1.1
         with:
           args: --timeout=10m
-
-      - name: Run Unit Tests
-        run: go test -race -v ./...

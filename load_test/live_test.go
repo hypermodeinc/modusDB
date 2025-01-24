@@ -1,4 +1,13 @@
-package modusdb_test
+/*
+ * Copyright 2025 Hypermode Inc.
+ * Licensed under the terms of the Apache License, Version 2.0
+ * See the LICENSE file that accompanied this code for further details.
+ *
+ * SPDX-FileCopyrightText: 2025 Hypermode Inc. <hello@hypermode.com>
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+package load_test
 
 import (
 	"context"
@@ -8,8 +17,8 @@ import (
 	"time"
 
 	"github.com/cavaliergopher/grab/v3"
-	"github.com/dgraph-io/dgraph/v24/dgraphapi"
-	"github.com/dgraph-io/dgraph/v24/systest/1million/common"
+	"github.com/hypermodeinc/dgraph/v24/dgraphapi"
+	"github.com/hypermodeinc/dgraph/v24/systest/1million/common"
 	"github.com/stretchr/testify/require"
 
 	"github.com/hypermodeinc/modusdb"
@@ -19,15 +28,11 @@ const (
 	baseURL          = "https://github.com/dgraph-io/benchmarks/blob/master/data"
 	oneMillionSchema = baseURL + "/1million.schema?raw=true"
 	oneMillionRDF    = baseURL + "/1million.rdf.gz?raw=true"
-)
-
-func TestLiveLoaderSmall(t *testing.T) {
-	const (
-		dbSchema = `
+	DbSchema         = `
 			director.film : [uid] @reverse @count .
 			name          : string @index(hash, term, trigram, fulltext) @lang .
 		`
-		data = `
+	SmallData = `
 			<12534504120601169429> <name> "Marc Caro"@en .
 			<2698880893682087932> <name> "Delicatessen"@en .
 			<2698880893682087932> <name> "Delicatessen"@de .
@@ -40,18 +45,20 @@ func TestLiveLoaderSmall(t *testing.T) {
 			<12534504120601169429> <director.film> <15617393957106514527> .
 			<14514306440537019930> <director.film> <15617393957106514527> .
 		`
-	)
+)
 
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+func TestLiveLoaderSmall(t *testing.T) {
+
+	engine, err := modusdb.NewEngine(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
-	defer db.Close()
+	defer engine.Close()
 
 	dataFolder := t.TempDir()
 	schemaFile := filepath.Join(dataFolder, "data.schema")
 	dataFile := filepath.Join(dataFolder, "data.rdf")
-	require.NoError(t, os.WriteFile(schemaFile, []byte(dbSchema), 0600))
-	require.NoError(t, os.WriteFile(dataFile, []byte(data), 0600))
-	require.NoError(t, db.Load(context.Background(), schemaFile, dataFile))
+	require.NoError(t, os.WriteFile(schemaFile, []byte(DbSchema), 0600))
+	require.NoError(t, os.WriteFile(dataFile, []byte(SmallData), 0600))
+	require.NoError(t, engine.Load(context.Background(), schemaFile, dataFile))
 
 	const query = `{
 		caro(func: allofterms(name@en, "Marc Caro")) {
@@ -77,15 +84,15 @@ func TestLiveLoaderSmall(t *testing.T) {
 			]
 		}`
 
-	resp, err := db.Query(context.Background(), query)
+	resp, err := engine.GetDefaultNamespace().Query(context.Background(), query)
 	require.NoError(t, err)
 	require.JSONEq(t, expected, string(resp.Json))
 }
 
 func TestLiveLoader1Million(t *testing.T) {
-	db, err := modusdb.New(modusdb.NewDefaultConfig(t.TempDir()))
+	engine, err := modusdb.NewEngine(modusdb.NewDefaultConfig(t.TempDir()))
 	require.NoError(t, err)
-	defer db.Close()
+	defer engine.Close()
 
 	baseDir := t.TempDir()
 	schResp, err := grab.Get(baseDir, oneMillionSchema)
@@ -93,12 +100,12 @@ func TestLiveLoader1Million(t *testing.T) {
 	dataResp, err := grab.Get(baseDir, oneMillionRDF)
 	require.NoError(t, err)
 
-	require.NoError(t, db.DropAll(context.Background()))
-	require.NoError(t, db.Load(context.Background(), schResp.Filename, dataResp.Filename))
+	require.NoError(t, engine.DropAll(context.Background()))
+	require.NoError(t, engine.Load(context.Background(), schResp.Filename, dataResp.Filename))
 
 	for _, tt := range common.OneMillionTCs {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-		resp, err := db.Query(ctx, tt.Query)
+		resp, err := engine.GetDefaultNamespace().Query(ctx, tt.Query)
 		cancel()
 
 		if ctx.Err() == context.DeadlineExceeded {
